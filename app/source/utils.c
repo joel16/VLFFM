@@ -140,3 +140,18 @@ void utilsGetSizeString(char *string, int size) {
     
     sprintf(string, "%.*f %s", (i == 0) ? 0 : 2, (double)size, units[i]);
 }
+
+int utilsSetDevice(const char *dev, const char *dev2, const char *dev3, char *dst) {
+    int ret = 0;
+
+    if ((R_FAILED(ret = sceIoUnassign(dev))) && (ret != 0x80020321)) {
+        utilsLogError("sceIoUnassign(%s) failed: 0x%x\n", dev, ret);
+    }
+    
+    if (R_FAILED(ret = sceIoAssign(dev, dev2, dev3, IOASSIGN_RDWR, NULL, 0))) {
+        utilsLogError("sceIoAssign(%s) failed: 0x%x\n", dev, ret);
+    }
+    
+    snprintf(dst, 10, "%s/", dev);
+    return ret;
+}

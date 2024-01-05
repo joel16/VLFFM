@@ -15,3 +15,4 @@ void utilsLogError(const char *error, ...);
 int utilsGetEnterButton(void);
 int utilsGetCancelButton(void);
 void utilsGetSizeString(char *string, int size);
+int utilsSetDevice(const char *dev, const char *dev2, const char *dev3, char *dst);

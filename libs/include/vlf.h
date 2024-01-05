@@ -1795,7 +1795,7 @@ void vlfGuiCancelBottomDialog();
  *
  * @returns - < 0 on error
 */
-int vlfGuiCentralMenu(int noptions, char **items, int defaultsel, int (* handler)(int sel), int dispx, int dispy);
+int vlfGuiCentralMenu(int noptions, const char **items, int defaultsel, int (* handler)(int sel), int dispx, int dispy);
 
 /**
  * Cancels (remove) the central menu
@@ -1840,7 +1840,7 @@ int vlfGuiLateralMenu(int noptions, char **items, int defaultsel, int (* handler
  *
  * @returns - < 0 on error
 */
-int vlfGuiLateralMenuEx(int noptions, char **items, int defaultsel, int (* handler)(int sel), int y, u32 color);
+int vlfGuiLateralMenuEx(int noptions, const char **items, int defaultsel, int (* handler)(int sel), int y, u32 color);
 
 /**
  * Cancels (remove) the lateral menu

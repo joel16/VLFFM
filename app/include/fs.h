@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <pspiofilemgr.h>
 
 #define FS_MAX_PATH 256
 
@@ -41,3 +42,7 @@ const char *fsSetPath(FsFileListEntry *entry, const char *path);
 int fsCopyPath(const char *src_path, const char *dest_path, FileProcessParam *param);
 int fsMovePath(const char *src_path, const char *dest_path);
 int fsDelete(const char *path, FileProcessParam *param);
+bool fsFileExists(const char *path);
+SceSize fsGetFileSize(const char *path);
+int fsReadFile(const char *path, void *buf, SceSize size);
+int fsWriteFile(const char *path, void *buf, SceSize size);

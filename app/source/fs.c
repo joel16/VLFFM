@@ -1,4 +1,3 @@
-#include <pspiofilemgr.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -545,4 +544,47 @@ int fsDelete(const char *path, FileProcessParam *param) {
     }
 
     return 0;
+}
+
+bool fsFileExists(const char *path) {
+    SceIoStat stat;
+    return sceIoGetstat(path, &stat) >= 0;
+}
+
+SceSize fsGetFileSize(const char *path) {
+    int ret = 0;
+    
+    SceIoStat stat;
+    memset(&stat, 0, sizeof(stat));
+    
+    if (R_FAILED(ret = sceIoGetstat(path, &stat))) {
+        return ret;
+    }
+    
+    return stat.st_size;
+}
+
+int fsReadFile(const char *path, void *buf, SceSize size) {
+    SceUID file = 0;
+    
+    if (R_FAILED(file = sceIoOpen(path, PSP_O_RDONLY, 0))) {
+        return file;
+    }
+    
+    int bytesRead = sceIoRead(file, buf, size);
+    sceIoClose(file);
+    return bytesRead;
+}
+    
+
+int fsWriteFile(const char *path, void *buf, SceSize size) {	
+    SceUID file = 0;
+
+    if (R_FAILED(file = sceIoOpen(path, PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777))) {
+        return file;
+    }
+    
+    int bytesWritten = sceIoWrite(file, buf, size);
+    sceIoClose(file);
+    return bytesWritten;
 }

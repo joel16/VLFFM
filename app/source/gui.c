@@ -7,12 +7,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "config.h"
 #include "fs.h"
 #include "gui.h"
 #include "utils.h"
 #include "vlf.h"
 
 #define NUM_GUI_CONTEXT_MENU_ITEMS 4
+#define NUM_GUI_MAIN_MENU_ITEMS    6
 
 enum GuiContextMenuItems {
     GUI_CONTEXT_MENU_PROPERTIES,
@@ -27,13 +29,13 @@ enum GuiCopyActionFlags {
     GUI_COPY_ACTION_MOVE_PATH
 };
 
-enum GuiDeviceList {
+enum GuiMainMenuList {
     GUI_DEVICE_MS0,
     GUI_DEVICE_FLASH0,
     GUI_DEVICE_FLASH1,
     GUI_DEVICE_FLASH2,
     GUI_DEVICE_FLASH3,
-    GUI_DEVICE_DISC0
+    GUI_DEVICE_DISC0,
 };
 
 typedef struct {
@@ -56,11 +58,11 @@ typedef struct {
 
 extern unsigned char backgrounds_bmp_start[];
 
-static const int start_y = 50, max_entries = 11, scrollbar_height = 222, colour = 16;
+static const int start_y = 50, max_entries = 11, scrollbar_height = 222, max_background_number = 35;
 static GuiFileList gui = { 0 };
 static bool file_op_flag = false;
 
-static void guiDisplayDeviceList(void);
+static void guiDisplayMainMenu(void);
 static void guiClearEventHandlers(void);
 
 static void guiSetTitle(char *fmt, ...) {
@@ -83,11 +85,32 @@ static void guiSetTitle(char *fmt, ...) {
         
     title_text = vlfGuiAddText(0, 0, text);
     title_pic = vlfGuiAddPictureResource("dd_helper.rco", "tex_folder", 4, -1);
-    vlfGuiSetTitleBarEx(title_text, NULL, 1, 0, colour);
+    vlfGuiSetTitleBarEx(title_text, NULL, 1, 0, config.background_number);
 }
 
 static void guiSetBackground(void) {
-    vlfGuiSetBackgroundFileBuffer(backgrounds_bmp_start + colour * 6176, 6176, 1);
+    if (config.background_number < 0) {
+        config.background_number = max_background_number;
+    }
+    else if (config.background_number > max_background_number) {
+        config.background_number = 0;
+    }
+    
+    vlfGuiSetBackgroundFileBuffer(backgrounds_bmp_start + config.background_number * 6176, 6176, 1);
+}
+
+int guiIncrementBackgroundNumber(void *param) {
+    config.background_number++;
+    guiSetBackground();
+    configSave();
+    return VLF_EV_RET_NOTHING;
+}
+
+int guiDecrementBackgroundNumber(void *param) {
+    config.background_number--;
+    guiSetBackground();
+    configSave();
+    return VLF_EV_RET_NOTHING;
 }
 
 static void guiSetScrollbar(void) {
@@ -149,6 +172,12 @@ static void guiClearScrollbar(void) {
         vlfGuiRemoveScrollBar(gui.scrollbar);
         gui.scrollbar = NULL;
     }
+}
+
+static void guiClearSelection(void) {
+    guiClearScrollbar();
+    gui.start = 0;
+    gui.selected = 0;
 }
 
 static void guiGetEntry(void) {
@@ -229,11 +258,7 @@ static void guiResetContextMenu(u8 *flag) {
     guiGetEntry();
     fsFreeDirectoryEntries(&g_file_list);
     fsGetDirectoryEntries(&g_file_list, g_cwd);
-    guiClearScrollbar();
-    
-    gui.start = 0;
-    gui.selected = 0;
-    
+    guiClearSelection();
     guiRefreshFileList(true);
 }
 
@@ -316,14 +341,14 @@ static int guiControlContextMenuSelection(int selection) {
 }
 
 static void guiDisplayContextMenu(void) {
-    char *item_labels[NUM_GUI_CONTEXT_MENU_ITEMS] = { 
+    const char *item_labels[NUM_GUI_CONTEXT_MENU_ITEMS] = { 
         "Properties",
         gui.context_menu.copy_flag == 1? "Paste" : "Copy",
         gui.context_menu.copy_flag == 2? "Paste" : "Move",
         "Delete"
     };
 
-    vlfGuiLateralMenuEx(NUM_GUI_CONTEXT_MENU_ITEMS, item_labels, 0, guiControlContextMenuSelection, 120, colour);
+    vlfGuiLateralMenuEx(NUM_GUI_CONTEXT_MENU_ITEMS, item_labels, 0, guiControlContextMenuSelection, 120, config.background_number);
     vlfGuiDrawFrame();
 }
 
@@ -426,11 +451,7 @@ static int guiControlFileBrowserEnter(void *param) {
         }
     }
     
-    guiClearScrollbar();
-    
-    gui.start = 0;
-    gui.selected = 0;
-    
+    guiClearSelection();
     guiRefreshFileList(true);
     return VLF_EV_RET_NOTHING;
 }
@@ -455,16 +476,13 @@ static int guiControlFileBrowserCancel(void *param) {
         guiDisplayErrorDialog();
     }
 
-    guiClearScrollbar();
-
-    gui.start = 0;
-    gui.selected = 0;
+    guiClearSelection();
 
     // Go back to device selection
     if (ret == 1) {
         guiClearFileList();
         guiClearEventHandlers();
-        guiDisplayDeviceList();
+        guiDisplayMainMenu();
         return VLF_EV_RET_NOTHING;
     }
     
@@ -488,7 +506,7 @@ static void guiControlFileBrowser(void) {
     vlfGuiAddEventHandler(PSP_KEY_CANCEL, -1, guiControlFileBrowserCancel, NULL);
 }
 
-static int guiControlDeviceSelection(int selection) {
+static int guiControlMainMenu(int selection) {
     int ret = 0;
     fsFreeDirectoryEntries(&g_file_list);
 
@@ -498,51 +516,19 @@ static int guiControlDeviceSelection(int selection) {
             break;
 
         case GUI_DEVICE_FLASH0:
-            if ((R_FAILED(ret = sceIoUnassign("flash0:"))) && (ret != 0x80020321)) {
-                utilsLogError("sceIoUnassign(flash0) failed: 0x%x\n", ret);
-            }
-            
-            if (R_FAILED(ret = sceIoAssign("flash0:", "lflash0:0,0", "flashfat0:", IOASSIGN_RDWR, NULL, 0))) {
-                utilsLogError("sceIoAssign(flash0) failed: 0x%x\n", ret);
-            }
-
-            strncpy(g_cwd, "flash0:/", 9);
+            ret = utilsSetDevice("flash0:", "lflash0:0,0", "flashfat0:", g_cwd);
             break;
         
         case GUI_DEVICE_FLASH1:
-            if ((R_FAILED(ret = sceIoUnassign("flash1:"))) && (ret != 0x80020321)) {
-                utilsLogError("sceIoUnassign(flash1) failed: 0x%x\n", ret);
-            }
-            
-            if (R_FAILED(ret = sceIoAssign("flash1:", "lflash0:0,1", "flashfat1:", IOASSIGN_RDWR, NULL, 0))) {
-                utilsLogError("sceIoAssign(flash1) failed: 0x%x\n", ret);
-            }
-            
-            strncpy(g_cwd, "flash1:/", 9);
+            ret = utilsSetDevice("flash1:", "lflash0:0,1", "flashfat1:", g_cwd);
             break;
         
         case GUI_DEVICE_FLASH2:
-            if ((R_FAILED(ret = sceIoUnassign("flash2:"))) && (ret != 0x80020321)) {
-                utilsLogError("sceIoUnassign(flash2) failed: 0x%x\n", ret);
-            }
-            
-            if (R_FAILED(ret = sceIoAssign("flash2:", "lflash0:0,2", "flashfat2:", IOASSIGN_RDWR, NULL, 0))) {
-                utilsLogError("sceIoAssign(flash2) failed: 0x%x\n", ret);
-            }
-
-            strncpy(g_cwd, "flash2:/", 9);
+            ret = utilsSetDevice("flash2:", "lflash0:0,2", "flashfat2:", g_cwd);
             break;
         
         case GUI_DEVICE_FLASH3:
-            if ((R_FAILED(ret = sceIoUnassign("flash3:"))) && (ret != 0x80020321)) {
-                utilsLogError("sceIoUnassign(flash3) failed: 0x%x\n", ret);
-            }
-            
-            if (R_FAILED(ret = sceIoAssign("flash3:", "lflash0:0,3", "flashfat3:", IOASSIGN_RDWR, NULL, 0))) {
-                utilsLogError("sceIoAssign(flash3) failed: 0x%x\n", ret);
-            }
-            
-            strncpy(g_cwd, "flash3:/", 9);
+            ret = utilsSetDevice("flash3:", "lflash0:0,3", "flashfat3:", g_cwd);
             break;
 
         case GUI_DEVICE_DISC0:
@@ -564,6 +550,7 @@ static int guiControlDeviceSelection(int selection) {
             }
 
             break;
+
     }
 
     if (R_SUCCEEDED(ret)) {
@@ -581,16 +568,17 @@ static int guiControlDeviceSelection(int selection) {
     return 0;
 }
 
-static void guiDisplayDeviceList(void) {
-    const int num_menu_items = 6;
-    char *item_labels[] = { "ms0:/", "flash0:/", "flash1:/", "flash2:/", "flash3:/", "disc0:/" };
-
+static void guiDisplayMainMenu(void) {
+    const char *item_labels[NUM_GUI_MAIN_MENU_ITEMS] = { "ms0:/", "flash0:/", "flash1:/", "flash2:/", "flash3:/", "disc0:/" };
+    
     guiSetSecondaryTitle("Devices");
-    vlfGuiCentralMenu(num_menu_items, item_labels, 0, guiControlDeviceSelection, 0, 0);
+    vlfGuiCentralMenu(NUM_GUI_MAIN_MENU_ITEMS, item_labels, 0, guiControlMainMenu, 0, 0);
 }
 
 void guiInit(void) {
     guiSetTitle("VLFFM v%d.%d", VERSION_MAJOR, VERSION_MINOR);
+    vlfGuiAddEventHandler(PSP_CTRL_RTRIGGER, -1, guiIncrementBackgroundNumber, NULL);
+    vlfGuiAddEventHandler(PSP_CTRL_LTRIGGER, -1, guiDecrementBackgroundNumber, NULL);
     guiSetBackground();
-    guiDisplayDeviceList();
+    guiDisplayMainMenu();
 }

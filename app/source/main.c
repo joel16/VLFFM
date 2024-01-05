@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "config.h"
 #include "gui.h"
 #include "utils.h"
 #include "vlf.h"
@@ -15,6 +16,7 @@ int app_main(int argc, char *argv[]) {
     PSP_KEY_ENTER = utilsGetEnterButton();
     PSP_KEY_CANCEL = utilsGetCancelButton();
 
+    configLoad();
     vlfGuiSystemSetup(1, 1, 1);
     guiInit();
     

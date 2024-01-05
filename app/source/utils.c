@@ -144,7 +144,7 @@ void utilsGetSizeString(char *string, int size) {
 int utilsSetDevice(const char *dev, const char *dev2, const char *dev3, char *dst) {
     int ret = 0;
 
-    if ((R_FAILED(ret = sceIoUnassign(dev))) && (ret != 0x80020321)) {
+    if ((R_FAILED(ret = sceIoUnassign(dev))) && (ret != SCE_KERNEL_ERROR_NODEV)) {
         utilsLogError("sceIoUnassign(%s) failed: 0x%x\n", dev, ret);
     }
     

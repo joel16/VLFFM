@@ -534,8 +534,8 @@ static void guiControlFileBrowser(void) {
     vlfGuiAddEventHandler(PSP_CTRL_LEFT, -1, guiControlFileBrowserStartList, NULL);
     vlfGuiAddEventHandler(PSP_CTRL_RIGHT, -1, guiControlFileBrowserEndList, NULL);
     vlfGuiAddEventHandler(PSP_CTRL_TRIANGLE, -1, guiControlContextMenu, NULL);
-    vlfGuiAddEventHandler(PSP_KEY_ENTER, -1, guiControlFileBrowserEnter, NULL);
-    vlfGuiAddEventHandler(PSP_KEY_CANCEL, -1, guiControlFileBrowserCancel, NULL);
+    vlfGuiAddEventHandler(PSP_CTRL_ENTER, -1, guiControlFileBrowserEnter, NULL);
+    vlfGuiAddEventHandler(PSP_CTRL_CANCEL, -1, guiControlFileBrowserCancel, NULL);
 }
 
 static int guiControlMainMenu(int selection) {

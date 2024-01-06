@@ -24,7 +24,7 @@ PSP_LARGE_MEMORY = 1
 
 LIBDIR  = ../libs/lib
 LDFLAGS = -nostdlib -nodefaultlibs
-LIBS    = -lpspmodinfo -lpspreg -lpspumd -lvlfgui -lvlfgu -lvlfutils -lvlflibc
+LIBS    = -lpspmodinfo -lpspumd -lvlfgui -lvlfgu -lvlfutils -lvlflibc
 
 EXTRA_TARGETS   = EBOOT.PBP
 PSP_EBOOT_TITLE = $(TARGET) v$(VERSION_MAJOR).$(VERSION_MINOR)$(VERSION_MICRO)

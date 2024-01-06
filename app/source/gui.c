@@ -29,13 +29,13 @@ enum GuiCopyActionFlags {
     GUI_COPY_ACTION_MOVE_PATH
 };
 
-enum GuiMainMenuList {
+enum GuiDeviceList {
     GUI_DEVICE_MS0,
     GUI_DEVICE_FLASH0,
     GUI_DEVICE_FLASH1,
     GUI_DEVICE_FLASH2,
     GUI_DEVICE_FLASH3,
-    GUI_DEVICE_DISC0,
+    GUI_DEVICE_DISC0
 };
 
 typedef struct {
@@ -62,7 +62,7 @@ static const int start_y = 50, max_entries = 11, scrollbar_height = 222, max_bac
 static GuiFileList gui = { 0 };
 static bool file_op_flag = false;
 
-static void guiDisplayMainMenu(void);
+static void guiDisplayDeviceList(void);
 static void guiClearEventHandlers(void);
 
 static void guiSetTitle(char *fmt, ...) {
@@ -407,6 +407,34 @@ static int guiControlFileBrowserDown(void *param) {
     return VLF_EV_RET_NOTHING;
 }
 
+static int guiControlFileBrowserStartList(void *param) {
+    if (file_op_flag) {
+        return VLF_EV_RET_NOTHING;
+    }
+
+    vlfGuiRemoveTextFocus(gui.text[gui.selected - gui.start], 1);
+    gui.selected = 0;
+    gui.start = 0;
+    guiRefreshFileList(false);
+
+    vlfGuiSetTextFocus(gui.text[gui.selected - gui.start]);
+    return VLF_EV_RET_NOTHING;
+}
+
+static int guiControlFileBrowserEndList(void *param) {
+    if (file_op_flag) {
+        return VLF_EV_RET_NOTHING;
+    }
+
+    vlfGuiRemoveTextFocus(gui.text[gui.selected - gui.start], 1);
+    gui.selected = (g_file_list.length - 1);
+    gui.start = (g_file_list.length - 1) - (max_entries - 1);
+    guiRefreshFileList(false);
+
+    vlfGuiSetTextFocus(gui.text[gui.selected - gui.start]);
+    return VLF_EV_RET_NOTHING;
+}
+
 static int guiControlContextMenu(void *param) {
     if (file_op_flag) {
         return VLF_EV_RET_NOTHING;
@@ -482,7 +510,7 @@ static int guiControlFileBrowserCancel(void *param) {
     if (ret == 1) {
         guiClearFileList();
         guiClearEventHandlers();
-        guiDisplayMainMenu();
+        guiDisplayDeviceList();
         return VLF_EV_RET_NOTHING;
     }
     
@@ -493,6 +521,8 @@ static int guiControlFileBrowserCancel(void *param) {
 static void guiClearEventHandlers(void) {
     vlfGuiRemoveEventHandler(guiControlFileBrowserUp);
     vlfGuiRemoveEventHandler(guiControlFileBrowserDown);
+    vlfGuiRemoveEventHandler(guiControlFileBrowserStartList);
+    vlfGuiRemoveEventHandler(guiControlFileBrowserEndList);
     vlfGuiRemoveEventHandler(guiControlContextMenu);
     vlfGuiRemoveEventHandler(guiControlFileBrowserEnter);
     vlfGuiRemoveEventHandler(guiControlFileBrowserCancel);
@@ -501,6 +531,8 @@ static void guiClearEventHandlers(void) {
 static void guiControlFileBrowser(void) {
     vlfGuiAddEventHandler(PSP_CTRL_UP, -1, guiControlFileBrowserUp, NULL);
     vlfGuiAddEventHandler(PSP_CTRL_DOWN, -1, guiControlFileBrowserDown, NULL);
+    vlfGuiAddEventHandler(PSP_CTRL_LEFT, -1, guiControlFileBrowserStartList, NULL);
+    vlfGuiAddEventHandler(PSP_CTRL_RIGHT, -1, guiControlFileBrowserEndList, NULL);
     vlfGuiAddEventHandler(PSP_CTRL_TRIANGLE, -1, guiControlContextMenu, NULL);
     vlfGuiAddEventHandler(PSP_KEY_ENTER, -1, guiControlFileBrowserEnter, NULL);
     vlfGuiAddEventHandler(PSP_KEY_CANCEL, -1, guiControlFileBrowserCancel, NULL);
@@ -568,7 +600,7 @@ static int guiControlMainMenu(int selection) {
     return 0;
 }
 
-static void guiDisplayMainMenu(void) {
+static void guiDisplayDeviceList(void) {
     const char *item_labels[NUM_GUI_MAIN_MENU_ITEMS] = { "ms0:/", "flash0:/", "flash1:/", "flash2:/", "flash3:/", "disc0:/" };
     
     guiSetSecondaryTitle("Devices");
@@ -576,9 +608,10 @@ static void guiDisplayMainMenu(void) {
 }
 
 void guiInit(void) {
-    guiSetTitle("VLFFM v%d.%d", VERSION_MAJOR, VERSION_MINOR);
     vlfGuiAddEventHandler(PSP_CTRL_RTRIGGER, -1, guiIncrementBackgroundNumber, NULL);
     vlfGuiAddEventHandler(PSP_CTRL_LTRIGGER, -1, guiDecrementBackgroundNumber, NULL);
+
+    guiSetTitle("VLFFM v%d.%d", VERSION_MAJOR, VERSION_MINOR);
     guiSetBackground();
-    guiDisplayMainMenu();
+    guiDisplayDeviceList();
 }

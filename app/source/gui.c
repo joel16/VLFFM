@@ -428,7 +428,11 @@ static int guiControlFileBrowserEndList(void *param) {
 
     vlfGuiRemoveTextFocus(gui.text[gui.selected - gui.start], 1);
     gui.selected = (g_file_list.length - 1);
-    gui.start = (g_file_list.length - 1) - (max_entries - 1);
+
+    if ((gui.selected == (g_file_list.length - 1)) && ((g_file_list.length - 1) > (max_entries - 1))) {
+        gui.start = (g_file_list.length - 1) - (max_entries - 1);
+    }
+    
     guiRefreshFileList(false);
 
     vlfGuiSetTextFocus(gui.text[gui.selected - gui.start]);

@@ -11,10 +11,10 @@ OBJS := $(addsuffix .o,$(BINFILES)) $(CFILES:.c=.o) $(SFILES:.S=.o) $(CPPFILES:.
         $(BMPFILES:.bmp=.o) $(PNGFILES:.png=.o) $(PRXFILES:.prx=.o)
 
 VERSION_MAJOR :=  1
-VERSION_MINOR :=  0
+VERSION_MINOR :=  1
 
 INCDIR   = ../libs/ ../libs/include include
-CFLAGS   = -Os -G0 -Wall -fshort-wchar -fno-pic -mno-check-zero-division  \
+CFLAGS   = -Os -mno-gpopt -Wall -fshort-wchar -fno-pic -mno-check-zero-division  \
            -DVERSION_MAJOR=$(VERSION_MAJOR) -DVERSION_MINOR=$(VERSION_MINOR)
 CXXFLAGS = $(CFLAGS) -fno-exceptions -fno-rtti -std=gnu++17
 ASFLAGS  := $(CFLAGS)

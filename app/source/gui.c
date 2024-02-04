@@ -267,7 +267,7 @@ static int guiControlContextMenuSelection(int selection) {
         case GUI_CONTEXT_MENU_PROPERTIES:
             guiDisplayProperties();
             break;
-
+        
         case GUI_CONTEXT_MENU_COPY:
             if (gui.context_menu.copy_flag == GUI_COPY_ACTION_NONE) {
                 guiSetCopyFlag(GUI_COPY_ACTION_COPY_PATH);
@@ -325,7 +325,7 @@ static int guiControlContextMenuSelection(int selection) {
 
             if (button_res == VLF_MD_YES) {
                 file_op_flag = true;
-                if (R_FAILED(fsDelete(fsSetPath(gui.entry, NULL), NULL))) {
+                if (R_FAILED(fsDeletePath(fsSetPath(gui.entry, NULL), NULL))) {
                     guiDisplayErrorDialog();
                 }
                 

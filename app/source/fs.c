@@ -441,42 +441,39 @@ int fsMovePath(const char *src_path, const char *dest_path) {
     return 0;
 }
 
-int fsDelete(const char *path, FileProcessParam *param) {
+int fsDeletePath(const char *path, FileProcessParam *param) {
     SceUID dfd = pspIoOpenDir(path);
     if (dfd >= 0) {
         int res = 0;
-
+        
         do {
             SceIoDirent dir;
             memset(&dir, 0, sizeof(SceIoDirent));
-
+            
             res = pspIoReadDir(dfd, &dir);
             if (res > 0) {
                 if (strcmp(dir.d_name, ".") == 0 || strcmp(dir.d_name, "..") == 0) {
                     continue;
                 }
-
-                size_t len = strlen(path) + strlen(dir.d_name) + 2;
+                
                 char new_path[512] = { 0 };
-                memset(new_path, 0, len);
                 snprintf(new_path, 512, "%s%s%s", path, fsHasEndSlash(path) ? "" : "/", dir.d_name);
-
+                
                 if (FIO_S_ISDIR(dir.d_stat.st_mode)) {
-                    int ret = fsDelete(new_path, param);
+                    int ret = fsDeletePath(new_path, param);
                     if (ret <= 0) {
-                        utilsLogError("%s: fsDelete(%s) failed: 0x%08x\n", __func__, new_path, ret);
+                        utilsLogError("%s: fsDeletePath(%s) failed: 0x%08x\n", __func__, new_path, ret);
                         pspIoCloseDir(dfd);
                         return ret;
                     }
-                }
-                else {
-                    int ret = 0;
-                    if (R_FAILED(ret = pspIoRemoveFile(new_path))) {
+                } else {
+                    int ret = pspIoRemoveFile(new_path);
+                    if (ret < 0) {
                         utilsLogError("%s: pspIoRemoveFile(%s) failed: 0x%08x\n", __func__, new_path, ret);
                         pspIoCloseDir(dfd);
                         return ret;
                     }
-
+                    
                     if (param) {
                         if (param->value) {
                             (param->value)++;
@@ -485,7 +482,7 @@ int fsDelete(const char *path, FileProcessParam *param) {
                         if (param->setProgress) {
                             param->setProgress(param->value ? param->value : 0, param->max);
                         }
-
+                        
                         if (param->cancelHandler && param->cancelHandler()) {
                             pspIoCloseDir(dfd);
                             return 0;
@@ -494,40 +491,35 @@ int fsDelete(const char *path, FileProcessParam *param) {
                 }
             }
         } while (res > 0);
-
-        int ret = 0;
-        if (R_FAILED(ret = pspIoCloseDir(dfd))) {
-            utilsLogError("%s: pspIoCloseDir(%s) failed: 0x%08x\n", __func__, path, ret);
-            return ret;
-        }
-
-        if (R_FAILED(ret = pspIoRemoveDir(path))) {
+        
+        pspIoCloseDir(dfd);
+        
+        int ret = pspIoRemoveDir(path);
+        if (ret < 0) {
             utilsLogError("%s: pspIoRemoveDir(%s) failed: 0x%08x\n", __func__, path, ret);
             return ret;
         }
         
-
         if (param) {
             if (param->value) {
                 (param->value)++;
             }
-
+            
             if (param->setProgress) {
                 param->setProgress(param->value ? param->value : 0, param->max);
             }
-
+            
             if (param->cancelHandler && param->cancelHandler()) {
                 return 0;
             }
         }
-    }
-    else {
-        int ret = 0;
-        if (R_FAILED(ret = pspIoRemoveFile(path))) {
+    } else {
+        int ret = pspIoRemoveFile(path);
+        if (ret < 0) {
             utilsLogError("%s: pspIoRemoveFile(%s) failed: 0x%08x\n", __func__, path, ret);
             return ret;
         }
-
+        
         if (param) {
             if (param->value) {
                 (param->value)++;
@@ -536,14 +528,14 @@ int fsDelete(const char *path, FileProcessParam *param) {
             if (param->setProgress) {
                 param->setProgress(param->value ? param->value : 0, param->max);
             }
-
+            
             if (param->cancelHandler && param->cancelHandler()) {
                 return 0;
             }
         }
     }
-
-    return 0;
+    
+    return 1;
 }
 
 bool fsFileExists(const char *path) {

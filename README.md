@@ -10,7 +10,7 @@ VLFFM (VLF File Manager) unlike other file manager applications for the PSP, it'
 
 - Copy files/folders.
 - Move files/folders.
-- Delete files/folders. (Recursive doesn't seem to work)
+- Delete files/folders.
 - File properties. (File size and modification time)
 
 **Credits:**
